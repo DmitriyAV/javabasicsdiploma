@@ -33,6 +33,7 @@ public interface TextGraphicsConverter {
      * Если исходное изображение имеет характеристики, превышающие максимальные,
      * при конвертации выбрасывается исключение.
      * @param maxRatio
+     * @return
      */
     void setMaxRatio(double maxRatio) throws BadImageSizeException;
 
