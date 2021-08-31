@@ -1,37 +1,40 @@
 package ru.netology.graphics.image;
-import ru.netology.graphics.server.GServer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
 public class Converter implements TextGraphicsConverter {
 
-    private int width;
-    private int height;
-    private GServer server;
+   private int width;
+   private int height;
+   private double ratio;
 
     @Override
     public String convert(String url) throws IOException, BadImageSizeException {
         // Вот так просто мы скачаем картинку из интернета :)
         BufferedImage img = ImageIO.read(new URL(url));
-        int sourceWidth = img.getWidth();
-        int sourceHeight = img.getHeight();
-        double ratio = sourceWidth / sourceHeight;
+
+        width = img.getWidth();
+        height = img.getHeight();
+
+        ratio = width / height;
         setMaxRatio(ratio);
+
         // Если конвертер попросили проверять на максимально допустимое
         // соотношение сторон изображения, то вам здесь надо сделать эту проверку,
         // и, если картинка не подходит, выбросить исключение BadImageSizeException.
-
-
+        
         // Чтобы получить ширину картинки, вызовите img.getWidth(), высоту - img.getHeight()
         // Если конвертеру выставили максимально допустимые ширину и/или высоту,
         // вам надо по ним и по текущим высоте и ширине вычислить новые высоту
         // и ширину.
-        setMaxWidth(sourceWidth);
-        setMaxHeight(sourceHeight);
+        setMaxWidth(width);
+        setMaxHeight(height);
         // Соблюдение пропорций означает что вы уменьшать ширину и высоту должны
         // в одинаковое количество раз.
         // Пример 1: макс. допустимые 100x100, а картинка 500x200. Новый размер
@@ -40,8 +43,8 @@ public class Converter implements TextGraphicsConverter {
         // будет 100x10 (в 1.5 раза меньше).
         // Подумайте, какими действиями можно вычислить новые размеры.
         // Не получается? Спросите вашего руководителя по курсовой, поможем!
-        int newWidth =;
-        int newHeight =;
+        int newWidth = width;
+        int newHeight = height;
         // Теперь нам надо попросить картинку изменить свои размеры на новые
         // Последний параметр означает, что мы просим картинку плавно сузиться
         // на новые размеры. В результате мы получаем ссылку на новую картинку, которая
@@ -58,7 +61,8 @@ public class Converter implements TextGraphicsConverter {
         // Теперь в bwImg у нас лежит чёрно-белая картинка нужных нам размеров.
         // Вы можете отслеживать каждый из этапов, просто в любом удобном для
         // вас моменте сохранив промежуточную картинку в файл через:
-        // ImageIO.write(imageObject, "png", new File("out.png"));
+        RenderedImage imageObject;
+        ImageIO.write(imageObject, "png", new File("out.png"));
         // После вызова этой инструкции у вас в проекте появится файл картинки out.png
         // Теперь давайте пройдёмся по пикселям нашего изображения.
         // Если для рисования мы просили у картинки .createGraphics(),
@@ -82,9 +86,10 @@ public class Converter implements TextGraphicsConverter {
         // получить степень белого пикселя (int color выше) и по ней
         // получить соответствующий символ c. Логикой превращения цвета
         // в символ будет заниматься другой объект, который мы рассмотрим ниже
-        for ??? {
-            for ??? {
+        for (int w = 0; w < newWidth; w++ ) {
+            for (int h = 0; h < newWidth; h++) {
                 int color = bwRaster.getPixel(w, h, new int[3])[0];
+                TextColorSchema schema;
                 char c = schema.convert(color);
             ??? //запоминаем символ c, например, в двумерном массиве
             }
@@ -99,20 +104,26 @@ public class Converter implements TextGraphicsConverter {
 
         @Override
     public void setMaxWidth(int width) {
-
-        width
+        int sourceWidth = 300;
+            if (width > sourceWidth) {
+                width /= 2;
+                width = Math.max(width, sourceWidth);
+            }
     }
+
 
     @Override
     public void setMaxHeight(int height) {
-
+        int sourceHeight = 300;
+        if (height > sourceHeight){
+            height /= 2;
+            height = Math.max(height, sourceHeight);
+        }
     }
 
     @Override
     public void setMaxRatio(double maxRatio) throws BadImageSizeException {
-        super(width, height);
-
-        double ratio = width / height;
+        double ratio = 4;
 
         if (maxRatio < ratio) {
             throw new BadImageSizeException(maxRatio, ratio);
@@ -121,6 +132,11 @@ public class Converter implements TextGraphicsConverter {
 
     @Override
     public void setTextColorSchema(TextColorSchema schema) {
+        for (int i = 0; i < 255; i++){
+            switch (i){
+                case (1):
 
+            }
+        }
     }
 }
