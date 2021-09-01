@@ -10,7 +10,7 @@ public interface TextGraphicsConverter {
      * @throws IOException
      * @throws BadImageSizeException Если соотношение сторон изображения слишком большое
      */
-    String convert(String url) throws IOException, BadImageSizeException;
+    String convert(String url) throws IOException, BadImageSizeException, NoSuchMethodException;
 
     /**
      * Устанавливает максимальную ширину результирующего изображения в "текстовых пикселях".
