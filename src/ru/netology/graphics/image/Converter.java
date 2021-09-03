@@ -3,7 +3,6 @@ package ru.netology.graphics.image;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -12,17 +11,19 @@ public class Converter implements TextGraphicsConverter {
 
     private int sourceWidth;
     private int sourceHeight;
+    private int targetWidth;
+    private int targetHeight;
     private double sourceRatio;
+    private double targetRatio;
 
     @Override
-    public String convert(String url) throws IOException, BadImageSizeException, NoSuchMethodException {
+    public String convert(String url) throws IOException, BadImageSizeException {
         // Вот так просто мы скачаем картинку из интернета :)
         BufferedImage img = ImageIO.read(new URL(url));
-
-        sourceWidth = img.getWidth();
         sourceHeight = img.getHeight();
-        sourceRatio = (double) sourceWidth / sourceHeight;
-
+        sourceWidth = img.getWidth();
+        sourceRatio = setRatio();
+        checkRatio();
         // Если конвертер попросили проверять на максимально допустимое
         // соотношение сторон изображения, то вам здесь надо сделать эту проверку,
         // и, если картинка не подходит, выбросить исключение BadImageSizeException.
@@ -41,8 +42,8 @@ public class Converter implements TextGraphicsConverter {
         // Подумайте, какими действиями можно вычислить новые размеры.
         // Не получается? Спросите вашего руководителя по курсовой, поможем!
 
-        int newWidth = sourceWidth;
-        int newHeight = sourceHeight;
+        int newWidth = getTargetWidth();
+        int newHeight = getTargetHeight();
         // Теперь нам надо попросить картинку изменить свои размеры на новые
         // Последний параметр означает, что мы просим картинку плавно сузиться
         // на новые размеры. В результате мы получаем ссылку на новую картинку, которая
@@ -59,9 +60,7 @@ public class Converter implements TextGraphicsConverter {
         // Теперь в bwImg у нас лежит чёрно-белая картинка нужных нам размеров.
         // Вы можете отслеживать каждый из этапов, просто в любом удобном для
         // вас моменте сохранив промежуточную картинку в файл через:
-        RenderedImage imageObject = bwImg;
-        assert imageObject != null;
-        ImageIO.write(imageObject, "png", new File("out.png"));
+        ImageIO.write(bwImg, "png", new File("out.png"));
         // После вызова этой инструкции у вас в проекте появится файл картинки out.png
         // Теперь давайте пройдёмся по пикселям нашего изображения.
         // Если для рисования мы просили у картинки .createGraphics(),
@@ -85,58 +84,121 @@ public class Converter implements TextGraphicsConverter {
         // получить степень белого пикселя (int color выше) и по ней
         // получить соответствующий символ c. Логикой превращения цвета
         // в символ будет заниматься другой объект, который мы рассмотрим ниже
+        TextColorSchema schema = new TextColorSchema() {
+            @Override
+            public char convert(int color) {
+             //   Map<Integer, Character> characterMap = new HashMap<>();
+                char finC = ' ';
+                char p = '#', p1 = '$', p2 = '@', p3 = '%', p4 = '*', p5 = '+', p6 = '-', p7 = '\'';
+                if (color >= 0 && color <= 31) return finC = p;
+                    else if (color > 31 && color <= 63) return finC = p1;
+                        else if (color > 63 && color <= 96) return finC = p2;
+                            else if (color > 96 && color <= 130) return finC = p3;
+                                else if (color > 130 && color <= 163) return finC = p4;
+                                    else if (color > 163 && color <= 196) return finC = p5;
+                                        else if (color > 196 && color <= 229) return finC = p6;
+                                            else if (color > 229 && color <= 255) return finC = p7;
+
+            return finC;
+            }
+        };
+        int[][] colorChar = { { } };
         for (int w = 0; w < newWidth; w++) {
-            for (int h = 0; h < newWidth; h++) {
+            for (int h = 0; h < newHeight; h++) {
                 int color = bwRaster.getPixel(w, h, new int[3])[0];
 
                 char c = schema.convert(color);
-                int[][] colorChar = new int[c][c];
+                colorChar = new int[c][c];
                 //запоминаем символ c, например, в двумерном массиве
             }
         }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int w = 0; w < colorChar.length; w++) {
+            for (int h = 0; h < colorChar.length; h++) {
+
+                stringBuilder
+                        .append(colorChar[w])
+                        .append('\t')
+                        .append(colorChar[w])
+                        .append('\n')
+                        .append(colorChar[h])
+                        .append('\t')
+                        .append(colorChar[h]);
+
+            }
+        }
+        return stringBuilder.toString();
         // Осталось собрать все символы в один большой текст
         // Для того чтобы изображение не было слишком узким, рекомендую
         // каждый пиксель превращать в два повторяющихся символа, полученных
         // от схемы.
-        return " "; // Возвращаем собранный текст.
+        // Возвращаем собранный текст.
     }
 
+    public double setRatio() {
+        return this.sourceRatio = (double) sourceWidth / sourceHeight;
+    }
+
+    public int getTargetHeight() {
+        return targetHeight;
+    }
+
+    public int getTargetWidth() {
+        return targetWidth;
+    }
+
+    private void setWidth(int width) {
+        this.targetWidth = width;
+    }
+
+    private void setHeight(int height) {
+        this.targetHeight = height;
+    }
+
+    public void checkRatio() throws BadImageSizeException {
+        if (sourceRatio > targetRatio) {
+            throw new BadImageSizeException(targetRatio, sourceRatio);
+        } else System.out.println("ratio " + sourceRatio + " is good");
+    }
+
+    public void heightNew() {
+        int newHeight;
+        if (sourceHeight > targetHeight) {
+            double ratio = (double) targetHeight / sourceHeight;
+
+            this.sourceWidth = (int) (sourceWidth * ratio);
+            newHeight = (int) (targetHeight * ratio);
+            setHeight(newHeight);
+        } else System.out.println("Height " + sourceHeight + " is ok");
+    }
+
+    public void widthNew() {
+        int newWidth;
+        if (sourceWidth > targetWidth) {
+            double ratio = (double) targetWidth / sourceWidth;
+
+            this.sourceHeight = (int) (sourceHeight * ratio);
+            newWidth = (int) (targetWidth * ratio);
+            setWidth(newWidth);
+        } else System.out.println("Width " + sourceWidth + " is ok");
+    }
 
     @Override
     public void setMaxWidth(int width) {
-
-        int newWidth;
-        if (sourceWidth > width) {
-            double ratio = (double) width / sourceWidth;
-
-            newWidth = width;
-            this.sourceHeight = (int) (sourceHeight * ratio);
-            newWidth = (int) (newWidth * ratio);
-            this.sourceWidth = newWidth;
-        } else System.out.println("Width " + sourceWidth + " is ok");
+        this.targetWidth = width;
+        widthNew();
     }
 
 
     @Override
     public void setMaxHeight(int height) {
-
-        int newHeight;
-        if (sourceHeight > height) {
-            double ratio = (double) height / sourceHeight;
-
-            newHeight = height;
-            this.sourceWidth = (int) (sourceWidth * ratio);
-            newHeight = (int) (newHeight * ratio);
-            this.sourceHeight = newHeight;
-        } else System.out.println("Height " + sourceHeight + " is ok");
+        this.targetHeight = height;
+        heightNew();
     }
 
     @Override
     public void setMaxRatio(double maxRatio) throws BadImageSizeException {
-
-        if (sourceRatio > maxRatio) {
-            throw new BadImageSizeException(maxRatio, sourceRatio);
-        } else System.out.println("ratio " + sourceRatio + " is good");
+        this.targetRatio = maxRatio;
     }
 
     @Override
