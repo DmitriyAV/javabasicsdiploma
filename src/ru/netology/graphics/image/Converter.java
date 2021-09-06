@@ -15,6 +15,7 @@ public class Converter implements TextGraphicsConverter {
     private int targetHeight;
     private double sourceRatio;
     private double targetRatio;
+    private char currentChar;
 
     @Override
     public String convert(String url) throws IOException, BadImageSizeException {
@@ -23,25 +24,14 @@ public class Converter implements TextGraphicsConverter {
         sourceHeight = img.getHeight();
         sourceWidth = img.getWidth();
         sourceRatio = setRatio();
-        checkRatio();
         // Если конвертер попросили проверять на максимально допустимое
         // соотношение сторон изображения, то вам здесь надо сделать эту проверку,
         // и, если картинка не подходит, выбросить исключение BadImageSizeException.
         // Чтобы получить ширину картинки, вызовите img.getWidth(), высоту - img.getHeight()
-
+        checkRatio();
         // Если конвертеру выставили максимально допустимые ширину и/или высоту,
         // вам надо по ним и по текущим высоте и ширине вычислить новые высоту
         // и ширину.
-
-        // Соблюдение пропорций означает что вы уменьшать ширину и высоту должны
-        // в одинаковое количество раз.
-        // Пример 1: макс. допустимые 100x100, а картинка 500x200. Новый размер
-        // будет 100x40 (в 5 раз меньше).
-        // Пример 2: макс. допустимые 100x30, а картинка 150x15. Новый размер
-        // будет 100x10 (в 1.5 раза меньше).
-        // Подумайте, какими действиями можно вычислить новые размеры.
-        // Не получается? Спросите вашего руководителя по курсовой, поможем!
-
         int newWidth = getTargetWidth();
         int newHeight = getTargetHeight();
         // Теперь нам надо попросить картинку изменить свои размеры на новые
@@ -84,66 +74,61 @@ public class Converter implements TextGraphicsConverter {
         // получить степень белого пикселя (int color выше) и по ней
         // получить соответствующий символ c. Логикой превращения цвета
         // в символ будет заниматься другой объект, который мы рассмотрим ниже
-        TextColorSchema schema = new TextColorSchema() {
-            @Override
-            public char convert(int color) {
-             //   Map<Integer, Character> characterMap = new HashMap<>();
-                char finC = ' ';
-                char p = '#', p1 = '$', p2 = '@', p3 = '%', p4 = '*', p5 = '+', p6 = '-', p7 = '\'';
-                if (color >= 0 && color <= 31) return finC = p;
-                    else if (color > 31 && color <= 63) return finC = p1;
-                        else if (color > 63 && color <= 96) return finC = p2;
-                            else if (color > 96 && color <= 130) return finC = p3;
-                                else if (color > 130 && color <= 163) return finC = p4;
-                                    else if (color > 163 && color <= 196) return finC = p5;
-                                        else if (color > 196 && color <= 229) return finC = p6;
-                                            else if (color > 229 && color <= 255) return finC = p7;
-
-            return finC;
+        TextColorSchema schema = color -> {
+            //  char p = '#', p1 = '$', p2 = '@', p3 = '%', p4 = '*', p5 = '+', p6 = '-', p7 = '\'';
+            char[] digits = {'#', '$', '@', '%', '*', '+', '-', '\''};
+            for (int i = 0; i < digits.length; i++) {
+                if (new Range(0, 31).contains(color)) return currentChar = digits[0];
+                else if (new Range(31, 63).contains(color)) return currentChar = digits[1];
+                else if (new Range(63, 96).contains(color)) return currentChar = digits[2];
+                else if (new Range(96, 130).contains(color)) return currentChar = digits[3];
+                else if (new Range(130, 163).contains(color)) return currentChar = digits[4];
+                else if (new Range(163, 196).contains(color)) return currentChar = digits[5];
+                else if (new Range(196, 229).contains(color)) return currentChar = digits[6];
+                else if (new Range(229, 255).contains(color)) return currentChar = digits[7];
             }
+            return currentChar;
         };
-        int[][] colorChar = { { } };
+
+        char[][] colorChar = new char[newWidth][newHeight];
+
         for (int w = 0; w < newWidth; w++) {
             for (int h = 0; h < newHeight; h++) {
                 int color = bwRaster.getPixel(w, h, new int[3])[0];
 
                 char c = schema.convert(color);
-                colorChar = new int[c][c];
+                colorChar[w][h] = c;
                 //запоминаем символ c, например, в двумерном массиве
-            }
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int w = 0; w < colorChar.length; w++) {
-            for (int h = 0; h < colorChar.length; h++) {
-
-                stringBuilder
-                        .append(colorChar[w])
-                        .append('\t')
-                        .append(colorChar[w])
-                        .append('\n')
-                        .append(colorChar[h])
-                        .append('\t')
-                        .append(colorChar[h]);
 
             }
         }
-        return stringBuilder.toString();
-        // Осталось собрать все символы в один большой текст
-        // Для того чтобы изображение не было слишком узким, рекомендую
-        // каждый пиксель превращать в два повторяющихся символа, полученных
-        // от схемы.
-        // Возвращаем собранный текст.
+
+        return print(colorChar);
     }
 
-    public double setRatio() {
+    private String print(char[][] colorChar) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < colorChar.length; i++) {
+            for (int j = 0; j < colorChar[i].length; j++) {
+                sb
+                        .append(colorChar[i][j])
+                        .append('\t');
+
+            }
+        }
+        return sb.toString();
+    }
+
+    private double setRatio() {
         return this.sourceRatio = (double) sourceWidth / sourceHeight;
     }
 
-    public int getTargetHeight() {
+    private int getTargetHeight() {
         return targetHeight;
     }
 
-    public int getTargetWidth() {
+    private int getTargetWidth() {
         return targetWidth;
     }
 
@@ -155,13 +140,13 @@ public class Converter implements TextGraphicsConverter {
         this.targetHeight = height;
     }
 
-    public void checkRatio() throws BadImageSizeException {
+    private void checkRatio() throws BadImageSizeException {
         if (sourceRatio > targetRatio) {
             throw new BadImageSizeException(targetRatio, sourceRatio);
         } else System.out.println("ratio " + sourceRatio + " is good");
     }
 
-    public void heightNew() {
+    private void heightNew() {
         int newHeight;
         if (sourceHeight > targetHeight) {
             double ratio = (double) targetHeight / sourceHeight;
@@ -172,7 +157,7 @@ public class Converter implements TextGraphicsConverter {
         } else System.out.println("Height " + sourceHeight + " is ok");
     }
 
-    public void widthNew() {
+    private void widthNew() {
         int newWidth;
         if (sourceWidth > targetWidth) {
             double ratio = (double) targetWidth / sourceWidth;
@@ -203,7 +188,6 @@ public class Converter implements TextGraphicsConverter {
 
     @Override
     public void setTextColorSchema(TextColorSchema schema) {
-
         for (int i = 0; i < 255; i++) {
             schema.convert(i);
 
